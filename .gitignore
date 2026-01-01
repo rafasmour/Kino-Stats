@@ -16,7 +16,7 @@
 
 
 #root folder
-!.env.sample
+!.env.example
 !.gitignore
 !docker-compose.dev.yml
 !LICENSE
