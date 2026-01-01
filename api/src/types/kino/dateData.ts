@@ -1,0 +1,49 @@
+export type DateData = {
+    content: KinoDraw[];
+}
+
+export interface KinoDraw {
+    gameId: number;
+    drawId: number;
+    drawTime: number; // Unix timestamp (ms)
+    status: 'results' | 'active' | 'pending';
+    drawBreak: number;
+    visualDraw: number;
+    pricePoints: PricePoints;
+    winningNumbers: WinningNumbers;
+    prizeCategories: PrizeCategory[];
+    wagerStatistics: WagerStatistics;
+}
+
+export interface PricePoints {
+    amount: number;
+}
+
+export interface WinningNumbers {
+    list: number[];
+    bonus?: number[];
+}
+
+export interface PrizeCategory {
+    id: number;
+    divident: number;
+    winners: number;
+    distributed: number;
+    jackpot: number;
+    fixed: number;
+    categoryType: number;
+    gameType: string;
+}
+
+export interface WagerStatistics {
+    columns: number;
+    wagers: number;
+    addOn?: number[];
+}
+
+export type NumberStats = {
+    [key: number]: {
+        occurrences: number;
+        bonusOccurrences: number;
+    };
+};
