@@ -1,0 +1,23 @@
+*
+#api
+!api
+!api/src
+!api/src/**/*
+!api/.dockerignore
+!api/.eslintrc.js
+!api/.prettierrc.
+!api/Dockerfile
+!api/.nest-cli.json
+!api/package-lock.json
+!api/package-lock.json
+!api/package.json
+!api/tsconfig.build.json
+!api/tsconfig.json
+
+
+#root folder
+!.env.sample
+!.gitignore
+!docker-compose.yml
+!LICENSE
+!README.MD
