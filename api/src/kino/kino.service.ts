@@ -2,28 +2,70 @@ import {Injectable} from '@nestjs/common';
 import moment, {type Moment} from 'moment';
 import axios from "axios";
 import {DateData, KinoDraw, NumberStats} from "../types/kino/dateData";
+import TaskExporter from "../lib/excel-exporter";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 @Injectable()
 export class KinoService {
-    async fetchDataForDay(day: Moment): Promise<DateData> {
+    async fetchDataForDay(day: Moment): Promise<{ content: KinoDraw[] }> {
         const dateString = day.format('YYYY-MM-DD');
-        // 1100 is kino's game id in opap api
-        const response = await axios.get(`https://api.opap.gr/draws/v3.0/1100/draw-date/${dateString}/${dateString}`);
-        console.log(response.data);
-        return response.data;
+        const baseUrl = `https://api.opap.gr/draws/v3.0/1100/draw-date/${dateString}/${dateString}`;
+        console.log(baseUrl);
+        let allContent: KinoDraw[] = [];
+        let currentPage = 0;
+        let isLastPage = false;
+
+        while (!isLastPage) {
+            try {
+                const response = await axios.get(baseUrl, {
+                    params: { page: currentPage, size: 100 },
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                });
+
+                allContent.push(...response.data.content);
+                isLastPage = response.data.last;
+                currentPage++;
+                await sleep(100);
+
+            } catch (error: any) {
+                // throws 403 on concurrent requests
+                if (error.response && error.response.status === 403) {
+                    console.warn(`Rate limited on page ${currentPage}. Waiting 5 seconds...`);
+                    await sleep(300); // Wait longer if hit by 429
+                    continue; // Retry the same page
+                }
+                throw error; // Re-throw other errors (404, 500, etc)
+            }
+        }
+
+        return { content: allContent };
     }
 
     async fetchDateData(from: Moment, to: Moment): Promise<KinoDraw[]> {
         const days: Moment[] = [];
-
         let current = from.clone().startOf('day');
         const end = to.clone().startOf('day');
+
         while (current.isSameOrBefore(end, 'day')) {
             days.push(current.clone());
             current.add(1, 'day');
         }
-        const requests = days.map(async day => this.fetchDataForDay(day));
-        const results = await Promise.all(requests);
-        return Array.prototype.concat(...results.map(data => data.content))
+
+        const allDraws: KinoDraw[] = [];
+
+        for (const day of days) {
+            console.log(`Fetching data for: ${day.format('YYYY-MM-DD')}...`);
+
+            const dayData = await this.fetchDataForDay(day);
+            allDraws.push(...dayData.content);
+
+            // Optional: Add a small buffer between days to be extra safe
+            await sleep(1000);
+        }
+
+        return allDraws;
     }
 
     calculateNumberStats(draws: KinoDraw[]): NumberStats {
@@ -33,7 +75,7 @@ export class KinoService {
             // normal numbers
             for (const num of draw.winningNumbers.list) {
                 if (!stats[num]) {
-                    stats[num] = { occurrences: 0, bonusOccurrences: 0 };
+                    stats[num] = { number: num, occurrences: 0, bonusOccurrences: 0 };
                 }
                 stats[num].occurrences++;
             }
@@ -42,7 +84,7 @@ export class KinoService {
             if (draw.winningNumbers.bonus) {
                 for (const bonus of draw.winningNumbers.bonus) {
                     if (!stats[bonus]) {
-                        stats[bonus] = { occurrences: 0, bonusOccurrences: 0 };
+                        stats[bonus] = { number: bonus, occurrences: 0, bonusOccurrences: 0 };
                     }
                     stats[bonus].bonusOccurrences++;
                 }
@@ -52,9 +94,13 @@ export class KinoService {
         return stats;
     }
 
-    async numberStats(from: Moment, to?: Moment) {
+    async numberStats(from: Moment, to?: Moment): Promise<NumberStats> {
         if (!to) to = from.clone();
         const data = await this.fetchDateData(from, to ?? from);
-        return this.calculateNumberStats(data);
+        // export data for personal use
+
+        const stats = this.calculateNumberStats(data);
+        TaskExporter.excelExport([`${from.format('dd-mm-yyyy')} - ${to.format('dd-mm-yyyy')}`], [Object.values(stats)])
+        return stats;
     }
 }

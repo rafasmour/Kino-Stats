@@ -17,7 +17,7 @@ export class KinoController {
     ) {
         return this.kinoService.numberStats(
             moment(from, 'DD/MM/YYYY' ),
-            moment(to, 'DD/MM/YYYY')
+            moment(to ?? from, 'DD/MM/YYYY')
         );
     }
 }

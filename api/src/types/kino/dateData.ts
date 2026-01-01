@@ -1,7 +1,22 @@
 export type DateData = {
     content: KinoDraw[];
+    totalPages: number;
+    totalElements: number;
+    last: boolean;
+    numberOfElements: number;
+    sort: SortDetail[];
+    first: boolean;
+    size: number;
+    number: number;
 }
-
+export type SortDetail = {
+    direction: string;
+    property: string;
+    ignoreCase: boolean;
+    nullHandling: string;
+    descending: boolean;
+    ascending: boolean;
+};
 export interface KinoDraw {
     gameId: number;
     drawId: number;
@@ -43,6 +58,7 @@ export interface WagerStatistics {
 
 export type NumberStats = {
     [key: number]: {
+        number: number;
         occurrences: number;
         bonusOccurrences: number;
     };

@@ -14,7 +14,6 @@
 !api/tsconfig.build.json
 !api/tsconfig.json
 
-
 #root folder
 !.env.example
 !.gitignore
