@@ -1,0 +1,24 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: ./Dockerfile
+    container_name: api
+    env_file: ".env"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`todo.${DOMAIN}`) && PathPrefix(`/api`)
+      - traefik.http.routers.api.entrypoints=websecure
+      - traefik.http.routers.api.tls=true
+
+    networks:
+      - webgateway
+    ports:
+      - 80
+    volumes:
+      - ./api/src:/src
+
+networks:
+  webgateway:
+    name: ${NETWORK}
+    external: true
