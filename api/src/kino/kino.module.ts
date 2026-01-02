@@ -4,6 +4,6 @@ import { KinoService } from './kino.service';
 
 @Module({
   controllers: [KinoController],
-  providers: [KinoService]
+  providers: [KinoService],
 })
 export class KinoModule {}

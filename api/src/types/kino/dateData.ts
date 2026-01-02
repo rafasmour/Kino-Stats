@@ -1,65 +1,65 @@
 export type DateData = {
-    content: KinoDraw[];
-    totalPages: number;
-    totalElements: number;
-    last: boolean;
-    numberOfElements: number;
-    sort: SortDetail[];
-    first: boolean;
-    size: number;
-    number: number;
-}
+  content: KinoDraw[];
+  totalPages: number;
+  totalElements: number;
+  last: boolean;
+  numberOfElements: number;
+  sort: SortDetail[];
+  first: boolean;
+  size: number;
+  number: number;
+};
 export type SortDetail = {
-    direction: string;
-    property: string;
-    ignoreCase: boolean;
-    nullHandling: string;
-    descending: boolean;
-    ascending: boolean;
+  direction: string;
+  property: string;
+  ignoreCase: boolean;
+  nullHandling: string;
+  descending: boolean;
+  ascending: boolean;
 };
 export interface KinoDraw {
-    gameId: number;
-    drawId: number;
-    drawTime: number; // Unix timestamp (ms)
-    status: 'results' | 'active' | 'pending';
-    drawBreak: number;
-    visualDraw: number;
-    pricePoints: PricePoints;
-    winningNumbers: WinningNumbers;
-    prizeCategories: PrizeCategory[];
-    wagerStatistics: WagerStatistics;
+  gameId: number;
+  drawId: number;
+  drawTime: number; // Unix timestamp (ms)
+  status: 'results' | 'active' | 'pending';
+  drawBreak: number;
+  visualDraw: number;
+  pricePoints: PricePoints;
+  winningNumbers: WinningNumbers;
+  prizeCategories: PrizeCategory[];
+  wagerStatistics: WagerStatistics;
 }
 
 export interface PricePoints {
-    amount: number;
+  amount: number;
 }
 
 export interface WinningNumbers {
-    list: number[];
-    bonus?: number[];
+  list: number[];
+  bonus?: number[];
 }
 
 export interface PrizeCategory {
-    id: number;
-    divident: number;
-    winners: number;
-    distributed: number;
-    jackpot: number;
-    fixed: number;
-    categoryType: number;
-    gameType: string;
+  id: number;
+  divident: number;
+  winners: number;
+  distributed: number;
+  jackpot: number;
+  fixed: number;
+  categoryType: number;
+  gameType: string;
 }
 
 export interface WagerStatistics {
-    columns: number;
-    wagers: number;
-    addOn?: number[];
+  columns: number;
+  wagers: number;
+  addOn?: number[];
 }
 
 export type NumberStats = {
-    [key: number]: {
-        number: number;
-        occurrences: number;
-        bonusOccurrences: number;
-    };
+  [key: number]: {
+    number: number;
+    occurrences: number;
+    bonusOccurrences: number;
+  };
 };
