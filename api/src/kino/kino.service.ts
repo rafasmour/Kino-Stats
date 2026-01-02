@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { type Moment } from 'moment';
-import axios from 'axios';
-import { KinoDraw, NumberStats } from '../types/kino/dateData';
+import axios, { AxiosResponse } from 'axios';
+import { DateData, KinoDraw, NumberStats } from '../types/kino/dateData';
 import TaskExporter from '../lib/excel-exporter';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -17,7 +17,7 @@ export class KinoService {
 
     while (!isLastPage) {
       try {
-        const response = await axios.get(baseUrl, {
+        const response: AxiosResponse<DateData> = await axios.get(baseUrl, {
           params: { page: currentPage, size: 100 },
           headers: {
             'User-Agent':
@@ -31,7 +31,8 @@ export class KinoService {
         await sleep(100);
       } catch (error: any) {
         // throws 403 on concurrent requests
-        if (error.response && error.response.status === 403) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (error?.response && error?.response.status === 403) {
           console.warn(
             `Rate limited on page ${currentPage}. Waiting 5 seconds...`,
           );
@@ -47,7 +48,7 @@ export class KinoService {
 
   async fetchDateData(from: Moment, to: Moment): Promise<KinoDraw[]> {
     const days: Moment[] = [];
-    let current = from.clone().startOf('day');
+    const current = from.clone().startOf('day');
     const end = to.clone().startOf('day');
 
     while (current.isSameOrBefore(end, 'day')) {

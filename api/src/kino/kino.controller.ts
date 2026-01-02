@@ -2,7 +2,7 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { KinoService } from './kino.service';
 import moment from 'moment';
 
-@Controller('kino')
+@Controller('api/kino')
 export class KinoController {
   constructor(private readonly kinoService: KinoService) {}
 

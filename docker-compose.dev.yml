@@ -6,16 +6,17 @@ services:
     env_file: ".env"
     labels:
       - traefik.enable=true
-      - traefik.http.routers.kino-api.rule=Host(`todo.${DOMAIN}`) && PathPrefix(`/api`)
+      - traefik.http.routers.kino-api.rule=Host(`kino.${DOMAIN}`) && PathPrefix(`/api`)
       - traefik.http.routers.kino-api.entrypoints=websecure
-      - traefik.http.services.kino-api.loadbalancer.server.port=3000
+      - traefik.http.services.kino-api.loadbalancer.server.port=80
       - traefik.http.routers.kino-api.tls=true
 
     networks:
       - webgateway
     volumes:
-      - ./api/src:/src
+      - ./api/src:/api/src
 
 networks:
   webgateway:
+    name: ${NETWORK}
     external: true
