@@ -47,7 +47,13 @@ export interface PrizeCategory {
   jackpot: number;
   fixed: number;
   categoryType: number;
-  gameType: string;
+  gameType:
+    | 'Kino'
+    | 'KinoBonus'
+    | 'KenoCloseToWin'
+    | 'Column'
+    | 'Draw'
+    | 'OddEven';
 }
 
 export interface WagerStatistics {
@@ -69,4 +75,10 @@ export type CombinationStats = {
     combination: string;
     percentage: number;
   };
+};
+
+export type WinningStat = {
+  time: string;
+  distributed: PrizeCategory['distributed'];
+  gameType: PrizeCategory['gameType'];
 };

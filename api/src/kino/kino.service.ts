@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type Moment } from 'moment';
+import moment, { type Moment } from 'moment';
 import axios, { AxiosResponse } from 'axios';
 import combination from 'combinations';
 import {
@@ -7,6 +7,8 @@ import {
   DateData,
   KinoDraw,
   NumberStats,
+  PrizeCategory,
+  WinningStat,
 } from '../types/kino/dateData';
 import ExcelExporter from '../lib/excel-exporter';
 
@@ -34,7 +36,7 @@ export class KinoService {
         allContent.push(...response.data.content);
         isLastPage = response.data.last;
         currentPage++;
-        await sleep(20);
+        await sleep(10);
       } catch (error: any) {
         // throws 403 on concurrent requests
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -71,7 +73,7 @@ export class KinoService {
       allDraws.push(...dayData.content);
 
       // Optional: Add a small buffer between days to be extra safe
-      await sleep(100);
+      await sleep(50);
     }
 
     return allDraws;
@@ -79,7 +81,6 @@ export class KinoService {
 
   calculateNumberStats(draws: KinoDraw[]): NumberStats {
     const stats: NumberStats = {};
-
     for (const draw of draws) {
       // normal numbers
       for (const num of draw.winningNumbers.list) {
@@ -183,6 +184,46 @@ export class KinoService {
     if (!to) to = from.clone();
     const data = await this.fetchDateData(from, to ?? from);
     const stats = this.calculateCombinationStats(data, combLength);
+    if (stats) {
+      ExcelExporter.excelExport(['1'], [Object.values(stats)]);
+    }
+    return stats;
+  }
+  /*
+   * Format winning stats by time played
+   * this approach focuses on the time played independent of day
+   * will format KinoDraw[] stats to hour and minute played and how much money was distributed across that hour*/
+  calculateWinningStats(data: KinoDraw[]): WinningStat[] {
+    const winningStats: Map<string, WinningStat> = new Map();
+
+    for (const draw of data) {
+      // draw time is a unix timestamp
+      const drawMoment = moment(draw.drawTime);
+
+      console.log(drawMoment.format('ddd MMM DD YYYY HH:mm'));
+
+      const drawTime = drawMoment.format('HH:mm');
+
+      draw.prizeCategories.forEach((prize: PrizeCategory) => {
+        const key = drawTime + '-' + prize.gameType;
+        const existingDistributed = winningStats.get(key)?.distributed ?? 0;
+        winningStats.set(key, {
+          time: drawTime,
+          distributed: existingDistributed + prize.distributed,
+          gameType: prize.gameType,
+        });
+      });
+    }
+    return Array.from(winningStats.entries())
+      .map(([, stat]) => stat)
+      .sort((a, b) => b.distributed - a.distributed)
+      .filter((a) => a.distributed !== 0);
+  }
+
+  async winningStats(from: Moment, to?: Moment) {
+    if (!to) to = from.clone();
+    const data = await this.fetchDateData(from, to ?? from);
+    const stats = this.calculateWinningStats(data);
     if (stats) {
       ExcelExporter.excelExport(['1'], [Object.values(stats)]);
     }
