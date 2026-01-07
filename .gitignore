@@ -3,6 +3,7 @@
 !api
 !api/src
 !api/src/**/*
+api/src/data
 !api/.dockerignore
 !api/.eslintrc.js
 !api/.prettierrc

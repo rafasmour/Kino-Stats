@@ -14,7 +14,7 @@ services:
     networks:
       - webgateway
     volumes:
-      - ./api/src:/api/src
+      - ./api:/api
 
 networks:
   webgateway:

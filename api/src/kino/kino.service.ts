@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { type Moment } from 'moment';
 import axios, { AxiosResponse } from 'axios';
-import { DateData, KinoDraw, NumberStats } from '../types/kino/dateData';
-import TaskExporter from '../lib/excel-exporter';
+import combination from 'combinations';
+import {
+  CombinationStats,
+  DateData,
+  KinoDraw,
+  NumberStats,
+} from '../types/kino/dateData';
+import ExcelExporter from '../lib/excel-exporter';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 @Injectable()
@@ -11,7 +17,7 @@ export class KinoService {
     const dateString = day.format('YYYY-MM-DD');
     const baseUrl = `https://api.opap.gr/draws/v3.0/1100/draw-date/${dateString}/${dateString}`;
     console.log(baseUrl);
-    let allContent: KinoDraw[] = [];
+    const allContent: KinoDraw[] = [];
     let currentPage = 0;
     let isLastPage = false;
 
@@ -28,7 +34,7 @@ export class KinoService {
         allContent.push(...response.data.content);
         isLastPage = response.data.last;
         currentPage++;
-        await sleep(100);
+        await sleep(20);
       } catch (error: any) {
         // throws 403 on concurrent requests
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -65,7 +71,7 @@ export class KinoService {
       allDraws.push(...dayData.content);
 
       // Optional: Add a small buffer between days to be extra safe
-      await sleep(1000);
+      await sleep(100);
     }
 
     return allDraws;
@@ -98,7 +104,7 @@ export class KinoService {
       }
     }
 
-    return stats;
+    return Object.values(stats).sort((a, b) => a.occurrences - b.occurrences);
   }
 
   async numberStats(from: Moment, to?: Moment): Promise<NumberStats> {
@@ -107,10 +113,79 @@ export class KinoService {
     // export data for personal use
 
     const stats = this.calculateNumberStats(data);
-    TaskExporter.excelExport(
-      [`${from.format('dd-mm-yyyy')} - ${to.format('dd-mm-yyyy')}`],
-      [Object.values(stats)],
-    );
+    if (stats) {
+      ExcelExporter.excelExport(
+        [`${from.format('dd-mm-yyyy')} - ${to.format('dd-mm-yyyy')}`],
+        [Object.values(stats)],
+      );
+    }
+    return stats;
+  }
+
+  // kino has a max of 1 to 12 numbers to be played
+  calculateCombinationStats(
+    draws: KinoDraw[],
+    combLength: number = 4,
+  ): CombinationStats {
+    const frequencyMap = new Map<string, number>();
+    const totalDraws = draws.length || 1;
+    const numberOccurrences = this.calculateNumberStats(draws);
+
+    const topNumbers = Object.values(numberOccurrences)
+      .sort((a, b) => b.occurrences - a.occurrences)
+      .slice(0, 20)
+      .map((entry) => Number(entry.number));
+
+    const combinations = combination(topNumbers, combLength, combLength);
+    console.log(`The top numbers are ${topNumbers.join(',')}`);
+    console.log(`Combinations to check: ${combinations.length}`);
+    for (const draw of draws) {
+      const winningSet = new Set(draw.winningNumbers.list);
+
+      for (let j = 0; j < combinations.length; j++) {
+        const currentComb = combinations[j];
+
+        let hasAll = true;
+        for (let k = 0; k < currentComb.length; k++) {
+          if (!winningSet.has(currentComb[k])) {
+            hasAll = false;
+            break;
+          }
+        }
+
+        if (hasAll) {
+          const key = currentComb.sort((a, b) => a - b).join(',');
+          frequencyMap.set(key, (frequencyMap.get(key) || 0) + 1);
+        }
+      }
+    }
+
+    const sortedStats = Array.from(frequencyMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 100);
+
+    const finalStats: CombinationStats = {};
+    for (const [comb, count] of sortedStats) {
+      const percentage = (count / totalDraws) * 100;
+      finalStats[comb] = {
+        combination: comb,
+        percentage: parseFloat(percentage.toFixed(2)),
+      };
+    }
+
+    return finalStats;
+  }
+  async combinationStats(
+    from: Moment,
+    to?: Moment,
+    combLength?: number,
+  ): Promise<CombinationStats> {
+    if (!to) to = from.clone();
+    const data = await this.fetchDateData(from, to ?? from);
+    const stats = this.calculateCombinationStats(data, combLength);
+    if (stats) {
+      ExcelExporter.excelExport(['1'], [Object.values(stats)]);
+    }
     return stats;
   }
 }

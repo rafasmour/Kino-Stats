@@ -63,3 +63,10 @@ export type NumberStats = {
     bonusOccurrences: number;
   };
 };
+
+export type CombinationStats = {
+  [combination: string]: {
+    combination: string;
+    percentage: number;
+  };
+};
